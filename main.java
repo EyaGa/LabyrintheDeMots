@@ -15,73 +15,91 @@ public class main {
 	        System.out.println("Le mot 'chien' est valide ? " + dict.isValidWord("chien"));
 	        System.out.println("Le mot 'vérité' est valide ? " + dict.isValidWord("vérité"));
 	    	  */
-	        int taille = 5; // Taille de la grille (exemple : 5x5)
-	        grid grille = new grid(taille, taille);
-	        
-	        // Nombre de mots à positionner
-	        int numberOfWords = 5;
 
-	        // Mots à positionner dans la grille (choisis aléatoirement à partir du dictionnaire)
-	        String[] mots = new String[numberOfWords];
-	        for (int i = 0; i < numberOfWords; i++) {
-	            mots[i] = dict.getRandomWord().toUpperCase();; // Obtenir un mot aléatoire
-	        }
+		         Map<String, Integer> stats = dict.getStats();
+            System.out.println("Statistiques du dictionnaire :");
+            System.out.println("Total des mots : " + stats.get("totalWords"));
+            System.out.println("Mots courts : " + stats.get("shortWords"));
+            System.out.println("Mots moyens : " + stats.get("mediumWords"));
+            System.out.println("Mots longs : " + stats.get("longWords"));
 
-	        // Afficher les mots choisis
-	        System.out.println("Mots choisis pour la grille :");
-	        for (String mot : mots) {
-	            System.out.println(mot);
-	        }
-
-	        // Tentative de placement des mots dans la grille
-	        for (String mot : mots) {
-	            if (grille.positionnerMot(mot)) {
-	                System.out.println("Le mot \"" + mot + "\" a été placé !");
-	            } else {
-	                System.out.println("Échec du positionnement du mot : " + mot);
-	            }
-	        }
-
-	        // Remplir les cases restantes avec des lettres aléatoires
-	        grille.remplirLettresAleatoires();
-
-	        // Affichage de la grille après l'ajout des mots et des lettres aléatoires
-	        grille.afficherGrille();
-	 	   
-	 	   
-		     // Créer le jeu
-	        // Création et exécution du jeu
-            jeu jeu = new jeu(grille, dict);
-
-            jeu.setPositions(0, 0, taille - 1, taille - 1);
-
-            // Afficher les positions de départ et de fin
-            System.out.println("Position de départ : (0,0)");
-            System.out.println("Position de fin : (" + (taille - 1) + "," + (taille - 1) + ")");
-
-            // Permettre au joueur d'entrer son chemin
+            // Configuration de la grille
             Scanner scanner = new Scanner(System.in);
-            System.out.println("Entrez votre chemin (suite de lettres, ex: ABCDE) :");
-            String chemin = scanner.nextLine();
-            System.out.println("Votre chemin est : " + chemin);
+            System.out.println("\nEntrez la taille de la grille (minimum 5) :");
+            int taille = Math.max(5, scanner.nextInt());
             
-            jeu.displayGame();
-            // Vérifier le score basé sur le chemin
-            int score = jeu.calculerScore(chemin);
-
-            // Afficher le score et les résultats
-            System.out.println("Votre score est : " + score);
-            try {
-                // Vérifier si le joueur a gagné
-            	  if (jeu.isCheminValide(0, 0, taille - 1, taille - 1)) {
-                      System.out.println("Bravo, vous avez respecté les contraintes !");
-                  } else {
-                      System.out.println("Votre chemin ne respecte pas les contraintes de départ et d'arrivée.");
-            } }catch (Exception e) {
-                System.err.println("Une erreur est survenue lors de la vérification du jeu : " + e.getMessage());
-                e.printStackTrace();
+    grid grille = new grid(taille, taille);
+            grille.initialiserGrilleAvecMurs();
+            // Configuration des mots
+            System.out.println("Combien de mots voulez-vous placer ? (maximum " + taille + ") :");
+            int nombreMots = Math.min(scanner.nextInt(), taille);
+            
+            // Sélection et placement des mots
+            String[] mots = new String[nombreMots];
+            int motsPlaces = 0;
+            for (int i = 0; i < nombreMots; i++) {
+                String mot = dict.getRandomWord(taille - 1).toUpperCase();
+                mots[i] = mot;
+                if (grille.positionnerMot(mot)) {
+                    System.out.println("Mot placé : " + mot);
+                    motsPlaces++;
+                } else {
+                    System.out.println("Impossible de placer : " + mot);
+                }
             }
 
-   }
+            if (motsPlaces == 0) {
+                System.out.println("Aucun mot n'a pu être placé. Le jeu ne peut pas continuer.");
+                return;
+            }
+            
+            // Remplir le reste avec des lettres aléatoires
+            grille.remplirGrilleComplete();
+            
+            // Création du jeu
+            jeu jeu = new jeu(grille, dict);
+            grille.afficherGrille();
+
+            // Boucle de jeu
+            boolean continuer = true;
+            try { while (continuer) {
+                jeu.displayGame();
+                
+                // Sélection des points de départ et d'arrivée
+                System.out.println("\nEntrez les coordonnées de départ (x y) comment ca x y :");
+                int startX = scanner.nextInt();
+                int startY = scanner.nextInt();
+                
+                System.out.println("Entrez les coordonnées d'arrivée (x y) comment ca x y :");
+                int endX = scanner.nextInt();
+                int endY = scanner.nextInt();
+                
+                try {
+                    jeu.setPositions(startX, startY, endX, endY);
+                    
+                    scanner.nextLine(); // Vider le buffer
+                    System.out.println("Entrez votre chemin (suite de lettres) :");
+                    String chemin = scanner.nextLine().toUpperCase();
+                    
+                    int scoreRound = jeu.calculerScore(chemin);
+                    System.out.println("Score pour ce tour : " + scoreRound);
+                    
+                    System.out.println("\nVoulez-vous continuer ? (O/N) :");
+                    continuer = scanner.nextLine().toUpperCase().startsWith("O");
+                    
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Erreur : " + e.getMessage());
+                }
+            }
+            
+            // Afficher le résultat final
+            System.out.println("\nFin du jeu !");
+            System.out.println("Score final : " + jeu.getScoreTotal());
+            System.out.println("Mots trouvés : " + jeu.getMotsTrouves());
+               }catch (Exception e) {
+            System.err.println("Une erreur est survenue : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
 
