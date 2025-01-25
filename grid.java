@@ -5,125 +5,155 @@ import java.util.Random;
 public class grid {
 	   private char[][] grille;
 	    private List<String> motsPositionnes;
+	    private boolean[][] cellsUsed;
 
-	    // Constructeur de la grille
 	    public grid(int lignes, int colonnes) {
 	        this.grille = new char[lignes][colonnes];
 	        this.motsPositionnes = new ArrayList<>();
-	        initialiserGrille();
-	    }
+	        this.cellsUsed = new boolean[lignes][colonnes];
 
-	    
-	    
-	    // Initialiser la grille avec des espaces vides
-	    private void initialiserGrille() {
+		    }
+
+
+		    // Initialiser la grille avec des espaces vides
+	    public void initialiserGrilleAvecMurs() {
 	        for (int i = 0; i < grille.length; i++) {
-	            for (int j = 0; j < grille[i].length; j++) {
-	                grille[i][j] = '\0';  // Caractère nul pour les cases vides
+	            for (int j = 0; j < grille[0].length; j++) {
+	                if (Math.random() < 0.3 && grille[i][j] == '\0' ) {
+	                    grille[i][j] = '#'; // Placer un mur
+	                }
 	            }
+
 	        }
+	        // S'assurer que la case de départ et celle de fin ne sont pas des murs
+	        grille[0][0] = '\0';
+	        grille[grille.length - 1][grille.length - 1] = '\0';
+	        afficherGrille();
 	    }
-	    
-	    
-	    
-	    // Méthode pour positionner un mot dans la grille
+		    
 	    public boolean positionnerMot(String mot) {
 	        Random rand = new Random();
-	        int maxAttempts = 100;  // Nombre maximum d'essais pour un mot
+	        int maxAttempts = 100; // Nombre maximum d'essais pour placer un mot
 	        for (int attempt = 0; attempt < maxAttempts; attempt++) {
-	            int direction = rand.nextInt(8);  // Choisir une direction parmi les 8 directions possibles
 	            int startX = rand.nextInt(grille.length);
 	            int startY = rand.nextInt(grille[0].length);
 
-	            // Calculer les coordonnées finales en fonction de la direction
-	            int dx = 0, dy = 0;
-	            switch (direction) {
-	                case 0: dx = 1; dy = 0; break;  // Droite
-	                case 1: dx = -1; dy = 0; break; // Gauche
-	                case 2: dx = 0; dy = 1; break;  // Bas
-	                case 3: dx = 0; dy = -1; break; // Haut
-	                case 4: dx = 1; dy = 1; break;  // Bas-Droite
-	                case 5: dx = -1; dy = 1; break; // Bas-Gauche
-	                case 6: dx = 1; dy = -1; break; // Haut-Droite
-	                case 7: dx = -1; dy = -1; break; // Haut-Gauche
-	            }
 
-	            // Vérifier si le mot peut être placé dans la grille à la position donnée
-	            if (peutPlacerMot(mot, startX, startY, dx, dy)) {
-	                // Si l'espace est disponible, place le mot
-	                for (int i = 0; i < mot.length(); i++) {
-	                    grille[startX + i * dx][startY + i * dy] = mot.charAt(i);
+	            // Vérifier si le mot peut être placé dans la grille avec une direction aléatoire pour chaque lettre
+	            for (int i = 0; i < mot.length(); i++) {
+	                // Choisir une direction aléatoire pour chaque lettre
+	                int direction = rand.nextInt(8);  // Choisir une direction parmi les 8 possibles
+	                int dx = 0, dy = 0;
+
+	                // Calculer les changements dx et dy en fonction de la direction choisie
+	                switch (direction) {
+	                    case 0: dx = 1; dy = 0; break;  // Droite
+	                    case 1: dx = -1; dy = 0; break; // Gauche
+	                    case 2: dx = 0; dy = 1; break;  // Bas
+	                    case 3: dx = 0; dy = -1; break; // Haut
+	                    case 4: dx = 1; dy = 1; break;  // Bas-Droite
+	                    case 5: dx = -1; dy = 1; break; // Bas-Gauche
+	                    case 6: dx = 1; dy = -1; break; // Haut-Droite
+	                    case 7: dx = -1; dy = -1; break; // Haut-Gauche
 	                }
-	                motsPositionnes.add(mot);  // Ajouter le mot à la liste des mots positionnés
-	                return true;  // Le mot a été placé
+
+	                // Vérifier si le mot peut être placé à cette position avec la direction choisie
+	                if (peutPlacerMot(mot, startX, startY, dx, dy)) {
+	                    // Si le mot peut être placé, le mettre dans la grille lettre par lettre
+	                    for (int j = 0; j < mot.length(); j++) {
+	                        int x = startX + j * dx;
+	                        int y = startY + j * dy;
+	                        cellsUsed[x][y] = true;
+	                        grille[x][y] = mot.charAt(j);  // Placer la lettre dans la grille
+	                    }
+	                    motsPositionnes.add(mot);  // Ajouter le mot à la liste des mots placés
+	                    return true;
+	                }
 	            }
 	        }
-	        return false;  // Impossible de placer le mot après plusieurs tentatives
+	        return false; // Impossible de placer le mot après plusieurs tentatives
 	    }
 	    
 	    
-
-	    // Vérifier si le mot peut être placé dans la grille à une position donnée
 	    private boolean peutPlacerMot(String mot, int startX, int startY, int dx, int dy) {
 	        int xFin = startX + (mot.length() - 1) * dx;
 	        int yFin = startY + (mot.length() - 1) * dy;
 
-	        // Vérifier si la dernière position du mot est à l'intérieur de la grille
+	        // Vérifier si les coordonnées finales sont valides
 	        if (xFin < 0 || xFin >= grille.length || yFin < 0 || yFin >= grille[0].length) {
-	            return false;  // Le mot dépasse les bords de la grille
+	            return false; // Le mot dépasse les bords de la grille
 	        }
 
-	        // Vérifier que les cases où le mot doit être placé sont vides
+	        // Vérifier si chaque case nécessaire est libre
 	        for (int i = 0; i < mot.length(); i++) {
 	            int x = startX + i * dx;
 	            int y = startY + i * dy;
-
-	            // Vérifier que la case est vide avant d'y placer le mot
-	            if (grille[x][y] != '\0') {
-	                return false;  // La case est déjà occupée
+	            if (grille[x][y] != '\0' && grille[x][y] != mot.charAt(i)) {
+	                return false; // La case est déjà occupée ou contient un mur
 	            }
 	        }
-	        return true;  // Le mot peut être placé
+	        return true;
 	    }
-	    
-	    
-	    // Remplir les cases restantes avec des lettres aléatoires
-	    public void remplirLettresAleatoires() {
+
+	    public void remplirGrilleComplete() {
 	        Random rand = new Random();
 	        for (int i = 0; i < grille.length; i++) {
 	            for (int j = 0; j < grille[i].length; j++) {
-	                if (grille[i][j] == '\0') {  // Si la case est vide
-	                    grille[i][j] = (char) ('A' + rand.nextInt(26)); // Remplir avec une lettre aléatoire
+	                if (grille[i][j] == '\0') {
+	                    grille[i][j] = (char) ('A' + rand.nextInt(26));
 	                }
 	            }
 	        }
 	    }
-
 	    // Afficher la grille pour visualisation
 	    public void afficherGrille() {
+	        String color = "\u001B[32m";  // Couleur verte pour les lettres des mots
+	        String reset = "\u001B[0m";   // Réinitialisation de la couleur
+
 	        for (int i = 0; i < grille.length; i++) {
 	            for (int j = 0; j < grille[i].length; j++) {
-	                System.out.print(grille[i][j] + " ");
+	            	  char letter = grille[i][j];
+	                  String letterStr = String.valueOf(letter);
+
+	                  // Supprimer les accents de la lettre
+	                  String cleanLetter = removeAccents(letterStr);
+
+	                  if (cellsUsed[i][j]) {
+	                      System.out.print(color + cleanLetter + reset + " "); // Lettre colorée
+	                  } else {
+	                      System.out.print(cleanLetter + " "); // Lettre normale
+	                  }
 	            }
 	            System.out.println();
 	        }
 	    }
-
-	    public List<String> getMotsPositionnes() {
-	        return motsPositionnes;
+	    
+	    
+	    // Méthode pour enlever les accents d'une chaîne de caractères
+	    private String removeAccents(String str) {
+	        // Normaliser le texte pour décomposer les caractères accentués
+	        String normalized = Normalizer.normalize(str, Normalizer.Form.NFD);
+	        // Supprimer les caractères accentués
+	        return normalized.replaceAll("[^\\p{ASCII}]", "");
 	    }
+  
+  public boolean estMur(int x, int y) {
+      return grille[x][y] == '-';
+  }
 
-	    public char[][] getGrille() {
-	        return grille;
-	    }
-	    // Retourner la lettre à la position (x, y)
-	    public char getLetterAt(int x, int y) {
-	        return grille[x][y];  // Retourne le caractère à la position donnée
-	    }
+  public List<String> getMotsPositionnes() {
+      return motsPositionnes;
+  }
 
-	    // Retourner la taille de la grille
-	    public int getTaille() {
-	        return grille.length;  // Retourne le nombre de lignes (ou colonnes, car la grille est carrée)
-	    }
+  public char[][] getGrille() {
+      return grille;
+  }
 
+  public char getLetterAt(int x, int y) {
+      return grille[x][y];
+  }
+
+  public int getTaille() {
+      return grille.length;
+  }
 }
